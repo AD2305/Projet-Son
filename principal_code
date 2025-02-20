@@ -13,15 +13,15 @@ AudioPlaySdWav           player3;
 AudioPlaySdWav           player4;
 
 // 🎛 Effets audio (1 par player)
-AudioEffectReverb        reverb1;
+/* AudioEffectReverb        reverb1;
 AudioEffectReverb        reverb2;
 AudioEffectReverb        reverb3;
-AudioEffectReverb        reverb4;
-
+AudioEffectReverb        reverb4; */
+/* 
 AudioEffectDelay         delay1;
 AudioEffectDelay         delay2;
 AudioEffectDelay         delay3;
-AudioEffectDelay         delay4;
+AudioEffectDelay         delay4; */
 
 // 🎚 Mixers individuels pour chaque player
 AudioMixer4              mixer1;
@@ -30,7 +30,7 @@ AudioOutputI2S audioOutput;      // Sortie audio
 AudioControlSGTL5000 audioShield;
 
 // 🎚 Assignation des connexions audio
-AudioConnection patchCord1(player1, reverb1);
+/* AudioConnection patchCord1(player1, reverb1);
 AudioConnection patchCord2(reverb1, 0, delay1, 0);
 AudioConnection patchCord3(delay1, 0, mixer1, 0);
 
@@ -45,11 +45,11 @@ AudioConnection patchCord9(delay3, 0, mixer3, 0);
 AudioConnection patchCord10(player4, reverb4);
 AudioConnection patchCord11(reverb4, 0, delay4, 0);
 AudioConnection patchCord12(delay4, 0, mixer4, 0);
-
-AudioConnection patchCord16(player1, mixer1, 0);
-AudioConnection patchCord17(player2, mixer1, 1);
-AudioConnection patchCord18(player3, mixer1, 2);
-AudioConnection patchCord19(player4, mixer1, 3);
+ */
+AudioConnection patchCord16(player1,0, mixer1, 0);
+AudioConnection patchCord17(player2,0, mixer1, 1);
+AudioConnection patchCord18(player3,0, mixer1, 2);
+AudioConnection patchCord19(player4,0, mixer1, 3);
 
 // 🔊 Chaque player envoie du son vers les deux canaux (stéréo)
 AudioConnection patchCord13(mixer1, 0, audioOutput, 0);
@@ -75,6 +75,9 @@ const int recordDuration = 5;
 bool isRecording = false;
 int mixage[4] = {0, 0, 0, 0};
 
+#define SDCARD_MOSI_PIN  11   
+#define SDCARD_SCK_PIN   13  
+
 void setup() {
     Serial.begin(9600);
     AudioMemory(40);
@@ -86,9 +89,10 @@ void setup() {
     audioShield.volume(0.8);
 
 
-
+    SPI.setMOSI(SDCARD_MOSI_PIN);
+    SPI.setSCK(SDCARD_SCK_PIN);
     // Initialisation de la carte SD
-    if (!SD.begin(BUILTIN_SDCARD)) {
+    if (!SD.begin()) {
         Serial.println("Erreur : carte SD non détectée !");
         return;
     }
@@ -102,28 +106,74 @@ void setup() {
     pinMode(recordButton, INPUT_PULLUP);
 
     // Réglage initial des effets
-    reverb1.reverbTime(1.5);  // Réverbération (1.5 sec)
-    delay1.delay(0, 250);      // Écho de 250 ms
+/*     reverb1.reverbTime(1.5);  // Réverbération (1.5 sec)
+    delay1.delay(0, 250);       */// Écho de 250 ms
     // Initialisation des mixeurs (volume à 80% au départ)
-    mixer1.gain(0, 0.8);
+}
+//  Fonction pour démarrer l'enregistrement
+void startRecording() {
+    isRecording = true;
+    recorder.begin();
 }
 
+// Fonction pour enregistrer depuis le micro
+void recordAudio(int numeropiste) {
+
+    Serial.println("func plus tard");
+    }
+
+
+void resetMixage(int mixage[], int taille, int index) {
+    for (int i = 0; i < taille; i++) {
+        mixage[i] = (i == index) ? 1 : 0;
+    }
+}
+
+
+// 📌 Sélection du Player actif (via un potentiomètre)
+int getSelectedPlayer() {
+  return selectedMemory;                  
+}
+void ToutesPistes(int a) {
+
+  if (a == 5){
+
+        player1.play("SDTEST1.wav");
+        player2.play("SDTEST2.WAV");
+        player3.play("SDTEST3.WAV");
+        player4.play("SDTEST4.WAV");
+        Serial.println("Reprends les sons.");
+        delay(300);
+  }
+
+}
+
+void StopSounds(int number) {
+    if (number >= 1 && number <= 4) {
+        if (number != 1) player1.stop();
+        if (number != 2) player2.stop();
+        if (number != 3) player3.stop();
+        if (number != 4) player4.stop();
+    }
+    Serial.print("Arrêt de tous les sons sauf la piste ");
+    Serial.println(number);
+}
 
 
 void loop() {
     // Ajustement des effets avec les potentiomètres
-    float reverbLevel = map(analogRead(potReverb), 0, 1023, 0, 3000) / 1000.0; // 0 à 3 sec
+/*     float reverbLevel = map(analogRead(potReverb), 0, 1023, 0, 3000) / 1000.0; // 0 à 3 sec
     float delayLevel = map(analogRead(potDelay), 0, 1023, 50, 500); // 50 à 500 ms
     float volumeLevel = map(analogRead(potVolume), 0, 1023, 0, 100) / 100.0; // 0 à 1.0
 
     reverb1.reverbTime(reverbLevel);
     delay1.delay(0, delayLevel);
-    audioShield.volume(volumeLevel);
+    audioShield.volume(volumeLevel); */
 
     // Lecture des fichiers audio
     if (digitalRead(button1) == LOW) {
-        Serial.println("Lecture : sound1.wav ");
-        player1.play("sound1.wav");
+        Serial.println("SDTEST1.WAV");
+        player1.play("SDTEST1.WAV");
         selectedMemory = 1;
         StopSounds(selectedMemory);
         Serial.println("Mémoire 1 sélectionnée");
@@ -131,12 +181,14 @@ void loop() {
         mixage[selectedMemory] += 1 ;
         if (mixage[selectedMemory] % 2 == 0){
             selectedMemory = 5 ;
+            ToutesPistes(selectedMemory);
         }
+        delay(500);
     }
 
-    if (digitalRead(button2) == LOW && !player2.isPlaying()) {
-        Serial.println("Lecture : sound2.wav ");
-        player2.play("sound2.wav");
+    if (digitalRead(button2) == LOW) {
+        Serial.println("Lecture : SDTEST2.WAV ");
+        player2.play("SDTEST2.WAV");
         selectedMemory = 2;
         StopSounds(selectedMemory);
         Serial.println("Mémoire 2 sélectionnée");
@@ -145,11 +197,12 @@ void loop() {
         if (mixage[selectedMemory] % 2 == 0){
             selectedMemory = 5 ;
         }
+        delay(500);
     }
 
     if (digitalRead(button3) == LOW && !player3.isPlaying()) {
-        Serial.println("Lecture : sound3.wav ");
-        player3.play("sound3.wav");
+        Serial.println("Lecture : SDTEST3.WAV ");
+        player3.play("SDTEST3.WAV");
         selectedMemory = 3;
         StopSounds(selectedMemory);
         Serial.println("Mémoire 3 sélectionnée");
@@ -158,11 +211,12 @@ void loop() {
         if (mixage[selectedMemory] % 2 == 0){
             selectedMemory = 5 ;
         }
+        delay(500);
     }
 
     if (digitalRead(button4) == LOW && !player4.isPlaying()) {
-        Serial.println("Lecture : sound4.wav ");
-        player4.play("sound4.wav");
+        Serial.println("Lecture : SDTEST4.WAV ");
+        player4.play("SDTEST4.WAV");
         selectedMemory = 4;
         StopSounds(selectedMemory);
         Serial.println("Mémoire 4 sélectionnée");
@@ -170,7 +224,9 @@ void loop() {
         mixage[selectedMemory] += 1 ;
         if (mixage[selectedMemory] % 2 == 0){
             selectedMemory = 5 ;
+            
         }
+        delay(500);
     }
 
     // Arrêt des sons
@@ -187,10 +243,10 @@ void loop() {
 
         }else{
 
-        player1.play("sound1.wav");
-        player2.play("sound2.wav");
-        player3.play("sound3.wav");
-        player4.play("sound4.wav");
+        player1.play("SDTEST1.WAV");
+        player2.play("SDTEST2.WAV");
+        player3.play("SDTEST3.WAV");
+        player4.play("SDTEST4.WAV");
         Serial.println("Reprends les sons.");
         delay(300);
 
@@ -207,58 +263,17 @@ void loop() {
     if (isRecording) {
         recordAudio(selectedMemory);
     }
-    if (selectedMemory == 5){
 
-        player1.play("sound1.wav");
-        player2.play("sound2.wav");
-        player3.play("sound3.wav");
-        player4.play("sound4.wav");
-        Serial.println("Reprends les sons.");
-        delay(300);
-
-    }
-    setReverb();  
-    setDelay();   
-    setVolume();
+/*     setReverb();  
+    setDelay();    
+    setVolume();*/
 }
 
-//  Fonction pour démarrer l'enregistrement
-void startRecording() {
-    isRecording = true;
-    recorder.begin();
-}
 
-// Fonction pour enregistrer depuis le micro
-void recordAudio(int numeropiste) {
 
-    //anais
-    }
-}
-
-void resetMixage(int mixage[], int taille, int index) {
-    for (int i = 0; i < taille; i++) {
-        mixage[i] = (i == index) ? 1 : 0;
-    }
-}
-
-void StopSounds(int number) {
-    if (number >= 1 && number <= 4) {
-        if (number != 1) player1.stop();
-        if (number != 2) player2.stop();
-        if (number != 3) player3.stop();
-        if (number != 4) player4.stop();
-    }
-    Serial.print("Arrêt de tous les sons sauf la piste ");
-    Serial.println(number);
-}
-
-// 📌 Sélection du Player actif (via un potentiomètre)
-int getSelectedPlayer() {
-  return selectedMemory;                  
-}
 
 // 🎛 Appliquer la réverbération au player sélectionné
-void setReverb() {
+/* void setReverb() {
   int playerNumber = getSelectedPlayer();
   float reverbLevel = analogRead(potReverb) / 1023.0 * 4.0;
 
@@ -268,10 +283,10 @@ void setReverb() {
     case 3: reverb3.reverbTime(reverbLevel); break;
     case 4: reverb4.reverbTime(reverbLevel); break;
   }
-}
+} */
 
 // ⏳ Appliquer l'écho (delay) au player sélectionné
-void setDelay() {
+/* void setDelay() {
   int playerNumber = getSelectedPlayer();
   float delayLevel = analogRead(potDelay) / 1023.0 * 500;
 
@@ -287,17 +302,17 @@ void setDelay() {
 void setVolume() {
   int playerNumber = getSelectedPlayer();
   float volumeLevel = analogRead(potVolume) / 1023.0;
-
+ 
   switch (playerNumber) {
     case 1: mixer1.gain(playerNumber - 1 , volumeLevel); break;
-    case 2: mixer2.gain(playerNumber - 1, volumeLevel); break;
-    case 3: mixer3.gain(playerNumber - 1, volumeLevel); break;
-    case 4: mixer4.gain(playerNumber - 1, volumeLevel); break;
+    case 2: mixer1.gain(playerNumber - 1, volumeLevel); break;
+    case 3: mixer1.gain(playerNumber - 1, volumeLevel); break;
+    case 4: mixer1.gain(playerNumber - 1, volumeLevel); break;
   }
 }
 
 
-
+ */
 /*
 AudioPlaySdWav playWav1; 
 AudioPlaySdWav playWav2; 
