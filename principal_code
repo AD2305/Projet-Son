@@ -295,3 +295,66 @@ void setVolume() {
     case 4: mixer4.gain(playerNumber - 1, volumeLevel); break;
   }
 }
+
+
+
+/*
+AudioPlaySdWav playWav1; 
+AudioPlaySdWav playWav2; 
+AudioPlaySdWav playWav3;
+AudioPlaySdWav playWav4; 
+AudioMixer4 mixer; 
+AudioControlSGTL5000 audioshield;
+AudioOutputI2S out;
+
+AudioConnection patchCord1(playWav1, 0, mixer, 0);
+AudioConnection patchCord2(playWav2, 0, mixer, 1);
+AudioConnection patchCord3(playWav3, 0, mixer, 2);
+AudioConnection patchCord4(playWav4, 0, mixer, 3);
+AudioConnection patchCord5(mixer, 0, out, 0);
+AudioConnection patchCord6(mixer, 0, out, 1);
+
+
+
+#define SDCARD_MOSI_PIN  11   
+#define SDCARD_SCK_PIN   13  
+
+void setup() {
+    Serial.begin(9600);
+    AudioMemory(80); // Allouer de la mémoire audio
+
+    audioshield.enable();
+    audioshield.volume(0.4); 
+
+    // Initialize the SD card
+    SPI.setMOSI(SDCARD_MOSI_PIN);
+    SPI.setSCK(SDCARD_SCK_PIN);
+    if (!(SD.begin())) {
+      
+      while (1) {
+        Serial.println("Unable to access the SD card");
+        delay(500);
+      }
+    }
+
+    // Démarrage des pistes audio
+    playWav1.play("SDTEST1.WAV");
+    delay(10); 
+    playWav2.play("SDTEST2.WAV");
+    delay(10); 
+    playWav3.play("SDTEST3.WAV");
+    delay(10); 
+    playWav4.play("SDTEST4.WAV");
+    
+
+    mixer.gain(0, 0.4); 
+    mixer.gain(1, 0.4); 
+    mixer.gain(2, 0.4); 
+    mixer.gain(3, 0.4); 
+    
+    
+}
+
+void loop() {
+
+}*/
