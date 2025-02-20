@@ -196,11 +196,12 @@ void loop() {
         mixage[selectedMemory] += 1 ;
         if (mixage[selectedMemory] % 2 == 0){
             selectedMemory = 5 ;
+            ToutesPistes(selectedMemory);
         }
         delay(500);
     }
 
-    if (digitalRead(button3) == LOW && !player3.isPlaying()) {
+    if (digitalRead(button3) == LOW && ) {
         Serial.println("Lecture : SDTEST3.WAV ");
         player3.play("SDTEST3.WAV");
         selectedMemory = 3;
@@ -210,11 +211,12 @@ void loop() {
         mixage[selectedMemory] += 1 ;
         if (mixage[selectedMemory] % 2 == 0){
             selectedMemory = 5 ;
+            ToutesPistes(selectedMemory);
         }
         delay(500);
     }
 
-    if (digitalRead(button4) == LOW && !player4.isPlaying()) {
+    if (digitalRead(button4) == LOW) {
         Serial.println("Lecture : SDTEST4.WAV ");
         player4.play("SDTEST4.WAV");
         selectedMemory = 4;
@@ -224,6 +226,7 @@ void loop() {
         mixage[selectedMemory] += 1 ;
         if (mixage[selectedMemory] % 2 == 0){
             selectedMemory = 5 ;
+            ToutesPistes(selectedMemory);
             
         }
         delay(500);
