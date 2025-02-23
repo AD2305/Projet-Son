@@ -3,7 +3,7 @@
 #include <SPI.h>
 #include <SD.h>
 
-// 🎛️ Objets audio
+// Objets audio
 AudioInputI2S in;             // Entrée micro
 AudioRecordQueue recorder;    // Enregistreur
 
@@ -12,7 +12,7 @@ AudioPlaySdWav           player2;
 AudioPlaySdWav           player3;
 AudioPlaySdWav           player4;
 
-// 🎛 Effets audio (1 par player)
+// Effets audio (1 par player)
 /* AudioEffectReverb        reverb1;
 AudioEffectReverb        reverb2;
 AudioEffectReverb        reverb3;
@@ -23,13 +23,13 @@ AudioEffectDelay         delay2;
 AudioEffectDelay         delay3;
 AudioEffectDelay         delay4; */
 
-// 🎚 Mixers individuels pour chaque player
+// Mixers individuels pour chaque player
 AudioMixer4              mixer1;
 
 AudioOutputI2S audioOutput;      // Sortie audio
 AudioControlSGTL5000 audioShield;
 
-// 🎚 Assignation des connexions audio
+// Assignation des connexions audio
 /* AudioConnection patchCord1(player1, reverb1);
 AudioConnection patchCord2(reverb1, 0, delay1, 0);
 AudioConnection patchCord3(delay1, 0, mixer1, 0);
@@ -51,7 +51,7 @@ AudioConnection patchCord17(player2,0, mixer1, 1);
 AudioConnection patchCord18(player3,0, mixer1, 2);
 AudioConnection patchCord19(player4,0, mixer1, 3);
 
-// 🔊 Chaque player envoie du son vers les deux canaux (stéréo)
+// Chaque player envoie du son vers les deux canaux (stéréo)
 AudioConnection patchCord13(mixer1, 0, audioOutput, 0);
 AudioConnection patchCord14(mixer1, 0, audioOutput, 1);
 
@@ -61,7 +61,7 @@ const int potReverb = A0;  // Contrôle la réverbération
 const int potDelay = A1;   // Contrôle l'écho
 const int potVolume = A2;  // Contrôle le volume principal
 
-// 🛠️ Boutons
+// Boutons
 const int button1 = 1;  // Joue le premier fichier
 const int button2 = 2;  // Joue le deuxième fichier
 const int button3 = 3;  
@@ -130,7 +130,7 @@ void resetMixage(int mixage[], int taille, int index) {
 }
 
 
-// 📌 Sélection du Player actif (via un potentiomètre)
+// Sélection du Player actif (via un potentiomètre)
 int getSelectedPlayer() {
   return selectedMemory;                  
 }
@@ -275,7 +275,7 @@ void loop() {
 
 
 
-// 🎛 Appliquer la réverbération au player sélectionné
+// Appliquer la réverbération au player sélectionné
 /* void setReverb() {
   int playerNumber = getSelectedPlayer();
   float reverbLevel = analogRead(potReverb) / 1023.0 * 4.0;
@@ -288,7 +288,7 @@ void loop() {
   }
 } */
 
-// ⏳ Appliquer l'écho (delay) au player sélectionné
+// Appliquer l'écho (delay) au player sélectionné
 /* void setDelay() {
   int playerNumber = getSelectedPlayer();
   float delayLevel = analogRead(potDelay) / 1023.0 * 500;
@@ -301,7 +301,7 @@ void loop() {
   }
 }
 
-// 🔊 Ajuster le volume du player sélectionné
+// Ajuster le volume du player sélectionné
 void setVolume() {
   int playerNumber = getSelectedPlayer();
   float volumeLevel = analogRead(potVolume) / 1023.0;
