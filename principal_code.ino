@@ -3,7 +3,7 @@
 #include <SPI.h>
 #include <SD.h>
 
-// Objets audio
+// 🎛️ Objets audio
 AudioInputI2S in;             // Entrée micro
 AudioRecordQueue recorder;    // Enregistreur
 
@@ -12,56 +12,60 @@ AudioPlaySdWav           player2;
 AudioPlaySdWav           player3;
 AudioPlaySdWav           player4;
 
-// Effets audio (1 par player)
-/* AudioEffectReverb        reverb1;
-AudioEffectReverb        reverb2;
-AudioEffectReverb        reverb3;
-AudioEffectReverb        reverb4; */
-/* 
-AudioEffectDelay         delay1;
-AudioEffectDelay         delay2;
-AudioEffectDelay         delay3;
-AudioEffectDelay         delay4; */
+// 🎛 Effets audio (Flanger, Granular, Chorus pour chaque player)
+AudioEffectFlange        flanger1;
+AudioEffectGranular      granular1;
+AudioEffectChorus        chorus1;
 
-// Mixers individuels pour chaque player
+AudioEffectFlange        flanger2;
+AudioEffectGranular      granular2;
+AudioEffectChorus        chorus2;
+
+AudioEffectFlange        flanger3;
+AudioEffectGranular      granular3;
+AudioEffectChorus        chorus3;
+
+AudioEffectFlange        flanger4;
+AudioEffectGranular      granular4;
+AudioEffectChorus        chorus4;
+
+// 🎚 Mixers individuels pour chaque player
 AudioMixer4              mixer1;
 
 AudioOutputI2S audioOutput;      // Sortie audio
 AudioControlSGTL5000 audioShield;
 
-// Assignation des connexions audio
-/* AudioConnection patchCord1(player1, reverb1);
-AudioConnection patchCord2(reverb1, 0, delay1, 0);
-AudioConnection patchCord3(delay1, 0, mixer1, 0);
+// 🎚 Assignation des connexions audio
+AudioConnection patchCord1(player1, 0, flanger1, 0);    // Flanger pour player1
+AudioConnection patchCord2(flanger1, 0, granular1, 0);  // Granular pour player1
+AudioConnection patchCord3(granular1, 0, chorus1, 0);  // Chorus pour player1
+AudioConnection patchCord4(chorus1, 0, mixer1, 0);     // Mixer1 pour player1
 
-AudioConnection patchCord4(player2, reverb2);
-AudioConnection patchCord5(reverb2, 0, delay2, 0);
-AudioConnection patchCord6(delay2, 0, mixer2, 0);
+AudioConnection patchCord5(player2, 0, flanger2, 0);    // Flanger pour player2
+AudioConnection patchCord6(flanger2, 0, granular2, 0);  // Granular pour player2
+AudioConnection patchCord7(granular2, 0, chorus2, 0);  // Chorus pour player2
+AudioConnection patchCord8(chorus2, 0, mixer1, 1);     // Mixer1 pour player2
 
-AudioConnection patchCord7(player3, reverb3);
-AudioConnection patchCord8(reverb3, 0, delay3, 0);
-AudioConnection patchCord9(delay3, 0, mixer3, 0);
+AudioConnection patchCord9(player3, 0, flanger3, 0);    // Flanger pour player3
+AudioConnection patchCord10(flanger3, 0, granular3, 0); // Granular pour player3
+AudioConnection patchCord11(granular3, 0, chorus3, 0); // Chorus pour player3
+AudioConnection patchCord12(chorus3, 0, mixer1, 2);    // Mixer1 pour player3
 
-AudioConnection patchCord10(player4, reverb4);
-AudioConnection patchCord11(reverb4, 0, delay4, 0);
-AudioConnection patchCord12(delay4, 0, mixer4, 0);
- */
-AudioConnection patchCord16(player1,0, mixer1, 0);
-AudioConnection patchCord17(player2,0, mixer1, 1);
-AudioConnection patchCord18(player3,0, mixer1, 2);
-AudioConnection patchCord19(player4,0, mixer1, 3);
+AudioConnection patchCord13(player4, 0, flanger4, 0);    // Flanger pour player4
+AudioConnection patchCord14(flanger4, 0, granular4, 0);  // Granular pour player4
+AudioConnection patchCord15(granular4, 0, chorus4, 0);  // Chorus pour player4
+AudioConnection patchCord16(chorus4, 0, mixer1, 3);     // Mixer1 pour player4
 
-// Chaque player envoie du son vers les deux canaux (stéréo)
-AudioConnection patchCord13(mixer1, 0, audioOutput, 0);
-AudioConnection patchCord14(mixer1, 0, audioOutput, 1);
-
+AudioConnection patchCord17(mixer1, 0, audioOutput, 0); // Sortie mono gauche
+AudioConnection patchCord18(mixer1, 0, audioOutput, 1); // Sortie mono droite
 
 // Potentiomètres
-const int potReverb = A0;  // Contrôle la réverbération
-const int potDelay = A1;   // Contrôle l'écho
-const int potVolume = A2;  // Contrôle le volume principal
+const int potFlanger = A0;  // Contrôle du Flanger
+const int potChorus = A1;   // Contrôle du Chorus
+const int potGranular = A2; // Contrôle du Granular
+const int potVolume = A3;   // Contrôle du volume principal
 
-// Boutons
+// 🛠 Boutons
 const int button1 = 1;  // Joue le premier fichier
 const int button2 = 2;  // Joue le deuxième fichier
 const int button3 = 3;  
@@ -78,6 +82,7 @@ int mixage[4] = {0, 0, 0, 0};
 #define SDCARD_MOSI_PIN  11   
 #define SDCARD_SCK_PIN   13  
 
+
 void setup() {
     Serial.begin(9600);
     AudioMemory(40);
@@ -88,13 +93,14 @@ void setup() {
     audioShield.micGain(10);
     audioShield.volume(0.8);
 
-
+    
     SPI.setMOSI(SDCARD_MOSI_PIN);
     SPI.setSCK(SDCARD_SCK_PIN);
+
     // Initialisation de la carte SD
     if (!SD.begin()) {
         Serial.println("Erreur : carte SD non détectée !");
-        return;
+        return ;
     }
 
     // Configuration des boutons
@@ -106,69 +112,34 @@ void setup() {
     pinMode(recordButton, INPUT_PULLUP);
 
     // Réglage initial des effets
-/*     reverb1.reverbTime(1.5);  // Réverbération (1.5 sec)
-    delay1.delay(0, 250);       */// Écho de 250 ms
+    flanger1.begin(0, 0, 0);  // Flanger initialisé pour player1
+    granular1.begin(0, 0);      // Granular initialisé pour player1
+    chorus1.begin(0, 0, 0);        // Chorus initialisé pour player1
+
+    flanger2.begin(0, 0, 0);  // Flanger initialisé pour player2
+    granular2.begin(0, 0);      // Granular initialisé pour player2
+    chorus2.begin(0, 0, 0);        // Chorus initialisé pour player2
+
+    flanger3.begin(0, 0, 0);  // Flanger initialisé pour player3
+    granular3.begin(0, 0);      // Granular initialisé pour player3
+    chorus3.begin(0, 0, 0);        // Chorus initialisé pour player3
+
+    flanger4.begin(0, 0, 0);  // Flanger initialisé pour player4
+    granular4.begin(0, 0);      // Granular initialisé pour player4
+    chorus4.begin(0, 0, 0);        // Chorus initialisé pour player4
+
     // Initialisation des mixeurs (volume à 80% au départ)
+    mixer1.gain(0, 0.8);
 }
-//  Fonction pour démarrer l'enregistrement
-void startRecording() {
-    isRecording = true;
-    recorder.begin();
-}
-
-// Fonction pour enregistrer depuis le micro
-void recordAudio(int numeropiste) {
-
-    Serial.println("func plus tard");
-    }
-
-
-void resetMixage(int mixage[], int taille, int index) {
-    for (int i = 0; i < taille; i++) {
-        mixage[i] = (i == index) ? 1 : 0;
-    }
-}
-
-
-// Sélection du Player actif (via un potentiomètre)
-int getSelectedPlayer() {
-  return selectedMemory;                  
-}
-void ToutesPistes(int a) {
-
-  if (a == 5){
-
-        player1.play("SDTEST1.wav");
-        player2.play("SDTEST2.WAV");
-        player3.play("SDTEST3.WAV");
-        player4.play("SDTEST4.WAV");
-        Serial.println("Reprends les sons.");
-        delay(300);
-  }
-
-}
-
-void StopSounds(int number) {
-    if (number >= 1 && number <= 4) {
-        if (number != 1) player1.stop();
-        if (number != 2) player2.stop();
-        if (number != 3) player3.stop();
-        if (number != 4) player4.stop();
-    }
-    Serial.print("Arrêt de tous les sons sauf la piste ");
-    Serial.println(number);
-}
-
 
 void loop() {
     // Ajustement des effets avec les potentiomètres
-/*     float reverbLevel = map(analogRead(potReverb), 0, 1023, 0, 3000) / 1000.0; // 0 à 3 sec
-    float delayLevel = map(analogRead(potDelay), 0, 1023, 50, 500); // 50 à 500 ms
-    float volumeLevel = map(analogRead(potVolume), 0, 1023, 0, 100) / 100.0; // 0 à 1.0
-
-    reverb1.reverbTime(reverbLevel);
-    delay1.delay(0, delayLevel);
-    audioShield.volume(volumeLevel); */
+    setFlanger(selectedMemory, analogRead(potFlanger));
+    setChorus(selectedMemory, analogRead(potChorus));
+    setGranular(selectedMemory, analogRead(potGranular));
+    setVolume(selectedMemory, analogRead(potVolume))
+    
+    
 
     // Lecture des fichiers audio
     if (digitalRead(button1) == LOW) {
@@ -201,7 +172,7 @@ void loop() {
         delay(500);
     }
 
-    if (digitalRead(button3) == LOW && ) {
+    if (digitalRead(button3) == LOW) {
         Serial.println("Lecture : SDTEST3.WAV ");
         player3.play("SDTEST3.WAV");
         selectedMemory = 3;
@@ -216,7 +187,7 @@ void loop() {
         delay(500);
     }
 
-    if (digitalRead(button4) == LOW) {
+    if (digitalRead(button4) == LOW ) {
         Serial.println("Lecture : SDTEST4.WAV ");
         player4.play("SDTEST4.WAV");
         selectedMemory = 4;
@@ -234,29 +205,24 @@ void loop() {
 
     // Arrêt des sons
     if (digitalRead(stopButton) == LOW) {
-
-        if (player4.isPlaying()){
-
-        player1.stop();
-        player2.stop();
-        player3.stop();
-        player4.stop();
-        Serial.println("Arrêt les sons.");
-        delay(300);
-
-        }else{
-
-        player1.play("SDTEST1.WAV");
-        player2.play("SDTEST2.WAV");
-        player3.play("SDTEST3.WAV");
-        player4.play("SDTEST4.WAV");
-        Serial.println("Reprends les sons.");
-        delay(300);
-
+        if (player4.isPlaying()) {
+            player1.stop();
+            player2.stop();
+            player3.stop();
+            player4.stop();
+            Serial.println("Arrêt des sons.");
+            delay(300);
+        } else {
+            player1.play("SDTEST1.wav");
+            player2.play("SDTEST2.WAV");
+            player3.play("SDTEST3.WAV");
+            player4.play("SDTEST4.WAV");
+            Serial.println("Reprends les sons.");
+            delay(300);
         }
     }
 
-    //  Enregistrement du micro
+    // Enregistrement du micro
     if (digitalRead(recordButton) == LOW && !isRecording) {
         Serial.println("Début enregistrement...");
         startRecording();
@@ -266,113 +232,114 @@ void loop() {
     if (isRecording) {
         recordAudio(selectedMemory);
     }
-
-/*     setReverb();  
-    setDelay();    
-    setVolume();*/
 }
 
-
-
-
-// Appliquer la réverbération au player sélectionné
-/* void setReverb() {
-  int playerNumber = getSelectedPlayer();
-  float reverbLevel = analogRead(potReverb) / 1023.0 * 4.0;
-
-  switch (playerNumber) {
-    case 1: reverb1.reverbTime(reverbLevel); break;
-    case 2: reverb2.reverbTime(reverbLevel); break;
-    case 3: reverb3.reverbTime(reverbLevel); break;
-    case 4: reverb4.reverbTime(reverbLevel); break;
-  }
-} */
-
-// Appliquer l'écho (delay) au player sélectionné
-/* void setDelay() {
-  int playerNumber = getSelectedPlayer();
-  float delayLevel = analogRead(potDelay) / 1023.0 * 500;
-
-  switch (playerNumber) {
-    case 1: delay1.delay(0, delayLevel); break;
-    case 2: delay2.delay(0, delayLevel); break;
-    case 3: delay3.delay(0, delayLevel); break;
-    case 4: delay4.delay(0, delayLevel); break;
-  }
+// Fonction pour démarrer l'enregistrement
+void startRecording() {
+    isRecording = true;
+    recorder.begin();
 }
 
-// Ajuster le volume du player sélectionné
-void setVolume() {
-  int playerNumber = getSelectedPlayer();
-  float volumeLevel = analogRead(potVolume) / 1023.0;
- 
-  switch (playerNumber) {
-    case 1: mixer1.gain(playerNumber - 1 , volumeLevel); break;
-    case 2: mixer1.gain(playerNumber - 1, volumeLevel); break;
-    case 3: mixer1.gain(playerNumber - 1, volumeLevel); break;
-    case 4: mixer1.gain(playerNumber - 1, volumeLevel); break;
-  }
+// Fonction pour enregistrer depuis le micro
+void recordAudio(int numeropiste) {
+    //anaîs.
 }
 
+void setFlanger(int playerNumber, int potValue) {
+    float depth = map(potValue, 0, 1023, 0, 100) / 100.0;
+    float speed = map(potValue, 0, 1023, 0, 10);
+    float offset = map(potValue, 0, 1023, 0, 10);
+    
+    if (playerNumber == 1) {
+        flanger1.voices(depth, speed, offset)
+    } else if (playerNumber == 2) {
+        flanger2.voices(depth, speed, offset)
+    } else if (playerNumber == 3) {
+        flanger3.voices(depth, speed, offset)
+    } else if (playerNumber == 4) {
+        flanger4.voices(depth, speed, offset)
+    }
+}
 
- */
-/*
-AudioPlaySdWav playWav1; 
-AudioPlaySdWav playWav2; 
-AudioPlaySdWav playWav3;
-AudioPlaySdWav playWav4; 
-AudioMixer4 mixer; 
-AudioControlSGTL5000 audioshield;
-AudioOutputI2S out;
+void setChorus(int playerNumber, int potValue) {
+    float voices = map(potValue, 0, 1023, 0, 100) / 100.0;
+    
+    if (playerNumber == 1) {
+        chorus1.voices(voices)
+        
+    } else if (playerNumber == 2) {
+        chorus2.voices(voices)
+        
+    } else if (playerNumber == 3) {
+        chorus3.voices(voices)
+        
+    } else if (playerNumber == 4) {
+        chorus4.voices(voices)
+        
+    }
+}
 
-AudioConnection patchCord1(playWav1, 0, mixer, 0);
-AudioConnection patchCord2(playWav2, 0, mixer, 1);
-AudioConnection patchCord3(playWav3, 0, mixer, 2);
-AudioConnection patchCord4(playWav4, 0, mixer, 3);
-AudioConnection patchCord5(mixer, 0, out, 0);
-AudioConnection patchCord6(mixer, 0, out, 1);
+void setGranular(int playerNumber, int potValue) {
+    float grainSize = map(potValue, 0, 1023, 0, 100) / 100.0;
+    float speed = map(potValue, 0, 1023, 0, 1);
+    
+    if (playerNumber == 1) {
+        granular1.beginPitchShift(grainSize);
+        granular1.setSpeed(speed);
+    } else if (playerNumber == 2) {
+        granular2.beginPitchShift(grainSize);
+        granular2.setSpeed(speed);
+    } else if (playerNumber == 3) {
+        granular3.beginPitchShift(grainSize);
+        granular3.setSpeed(speed);
+    } else if (playerNumber == 4) {
+        granular4.beginPitchShift(grainSize);
+        granular4.setSpeed(speed);
+    }
+}
 
+void resetMixage(int mixage[], int taille, int index) {
+    for (int i = 0; i < taille; i++) {
+        mixage[i] = (i == index) ? 1 : 0;
+    }
+}
 
+void StopSounds(int number) {
+    if (number >= 1 && number <= 4) {
+        if (number != 1) player1.stop();
+        if (number != 2) player2.stop();
+        if (number != 3) player3.stop();
+        if (number != 4) player4.stop();
+    }
+    Serial.print("Arrêt de tous les sons sauf la piste ");
+    Serial.println(number);
+}
 
-#define SDCARD_MOSI_PIN  11   
-#define SDCARD_SCK_PIN   13  
-
-void setup() {
-    Serial.begin(9600);
-    AudioMemory(80); // Allouer de la mémoire audio
-
-    audioshield.enable();
-    audioshield.volume(0.4); 
-
-    // Initialize the SD card
-    SPI.setMOSI(SDCARD_MOSI_PIN);
-    SPI.setSCK(SDCARD_SCK_PIN);
-    if (!(SD.begin())) {
-      
-      while (1) {
-        Serial.println("Unable to access the SD card");
-        delay(500);
-      }
+//  Ajuster le volume du player sélectionné
+void setVolume(int playerNumber, int potValue) {
+    float volumeLevel = map(analogRead(potVolume), 0, 1023, 0, 100) / 100.0;
+  
+    switch (playerNumber) {
+      case 1: mixer1.gain(playerNumber  , volumeLevel); break;
+      case 2: mixer1.gain(playerNumber , volumeLevel); break;
+      case 3: mixer1.gain(playerNumber , volumeLevel); break;
+      case 4: mixer1.gain(playerNumber , volumeLevel); break;
     }
 
-    // Démarrage des pistes audio
-    playWav1.play("SDTEST1.WAV");
-    delay(10); 
-    playWav2.play("SDTEST2.WAV");
-    delay(10); 
-    playWav3.play("SDTEST3.WAV");
-    delay(10); 
-    playWav4.play("SDTEST4.WAV");
-    
-
-    mixer.gain(0, 0.4); 
-    mixer.gain(1, 0.4); 
-    mixer.gain(2, 0.4); 
-    mixer.gain(3, 0.4); 
-    
-    
+    float volumeLevel = map(analogRead(potVolume), 0, 1023, 0, 100) / 100.0; // 0 à 1.0
+    audioShield.volume(volumeLevel);
 }
 
-void loop() {
+void ToutesPistes(int a) {
 
-}*/
+    if (a == 5){
+  
+          player1.play("SDTEST1.wav");
+          player2.play("SDTEST2.WAV");
+          player3.play("SDTEST3.WAV");
+          player4.play("SDTEST4.WAV");
+          Serial.println("Reprends les sons.");
+          delay(300);
+    }
+
+    
