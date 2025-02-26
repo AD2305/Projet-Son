@@ -112,7 +112,7 @@ void loop() {
     
     readingsound(selectedMemory);
 
-    }
+    
 }
 
 void resetMixage(int mixage[], int taille, int index) {

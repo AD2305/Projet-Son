@@ -22,16 +22,17 @@ class Record : public AudioStream
         void button(int btn);
         void readingsound(int memory);
         void resetMixage(int mixage[], int taille, int index);
+        void toutesPistes(int a);
+        void stopSounds(int number);
         virtual void update(void);
 
     
     private:
         //variable
-        const int button1, button2, button3, button4;
         bool isRecording;
         File file;
-        int piste,selectedMemory, potPin;
-        Bounce recordButton, playButton;
+        int piste=1,selectedMemory=0;
+        int mixage[4]={0,0,0,0};
 }
 
 #endif

@@ -1,6 +1,9 @@
 #include "Record.h"
 
+
+
 Record::Record() :
+AudioPlaySdWav * const playerlist[4] = {&player1, &player2, &player3, &player4}
 {
   Serial.begin(9600);
   AudioMemory(40);
@@ -11,13 +14,6 @@ Record::Record() :
   audioShield.micGain(10);  
   audioShield.volume(1);
 
-  // Configuration des boutons
-  pinMode(button1, INPUT_PULLUP);
-  pinMode(button2, INPUT_PULLUP);
-  pinMode(button3, INPUT_PULLUP);
-  pinMode(button4, INPUT_PULLUP);
-  pinMode(5, INPUT_PULLUP); //recordButton
-  pinMode(6, INPUT_PULLUP); //playButton
 
   // Connexion carte SD
   SPI.setMOSI(SDCARD_MOSI_PIN);
@@ -73,16 +69,18 @@ void Record::stopRecording(void){
 }
 
 void Record::button(int btn){
-  selectedMemory = btn;
-  Serial.print("Mémoire ");
-  Serial.print(btn);
-  Serial.println(" sélectionnée");
-  delay(200);
-  resetMixage(mixage,sizeof(mixage),selectedMemory);
-  mixage[btn] += 1;
-  if (mixage[btn] % 2 == 0){
-      selectedMemory = 5;
+  Serial.println("SDTEST1.WAV");
+  player1.play("SDTEST1.WAV");
+  selectedMemory = 1;
+  stopSounds(selectedMemory);
+  Serial.println("Mémoire 1 sélectionnée");
+  resetMixage(mixage,4,selectedMemory);
+  mixage[selectedMemory] += 1 ;
+  if (mixage[selectedMemory] % 2 == 0){
+    selectedMemory = 5 ;
+    toutesPistes(selectedMemory);
   }
+  delay(500);
 }
 
 void Record::resetMixage(int mixage[], int taille, int index) {
@@ -99,6 +97,30 @@ void Record::readingsound(int memory) {
   
 }
 
+void Record::toutesPistes(int a) {
+
+  if (a == 5){
+
+        player1.play("SDTEST1.wav");
+        player2.play("SDTEST2.WAV");
+        player3.play("SDTEST3.WAV");
+        player4.play("SDTEST4.WAV");
+        Serial.println("Reprends les sons.");
+        delay(300);
+  }
+
+}
+
+void Record::stopSounds(int number) {
+  if (number >= 1 && number <= 4) {
+      if (number != 1) player1.stop();
+      if (number != 2) player2.stop();
+      if (number != 3) player3.stop();
+      if (number != 4) player4.stop();
+  }
+  Serial.print("Arrêt de tous les sons sauf la piste ");
+  Serial.println(number);
+}
 
 void Record::update(void){
   int potValue = analogRead(potPin);
@@ -118,6 +140,8 @@ void Record::update(void){
     if (digitalRead(button4) == LOW) {
         button(button4);
     }
+
+    IF
 
     // Début de l'enregistrement
     if (digitalRead(5) == LOW && !isRecording) {
