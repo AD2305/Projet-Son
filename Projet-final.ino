@@ -3,6 +3,15 @@
 #include <SPI.h>
 #include <SD.h>
 
+#define FLANGE_DELAY_LENGTH (6*AUDIO_BLOCK_SAMPLES)
+short delayline[FLANGE_DELAY_LENGTH];
+
+#define GRANULAR_MEMORY_SIZE 12800  // Mémoire pour l'effet granular
+int16_t granularMemory[GRANULAR_MEMORY_SIZE];
+
+#define CHORUS_DELAY_LENGTH (100 * AUDIO_BLOCK_SAMPLES)
+short delayline2[CHORUS_DELAY_LENGTH];
+
 AudioInputI2S  input;
 AudioPlaySdRaw playRaw;
 
@@ -10,36 +19,71 @@ AudioPlaySdRaw playRaw1;
 AudioPlaySdRaw playRaw2;
 AudioPlaySdRaw playRaw3;
 AudioPlaySdRaw playRaw4;
+
 AudioRecordQueue queue1;
 AudioMixer4 mixer;
+
 AudioOutputI2S out;
 AudioControlSGTL5000 audioShield;
 
+AudioEffectFlange flanger1, flanger2, flanger3, flanger4;
+AudioEffectGranular granular1, granular2, granular3, granular4;
+AudioEffectChorus chorus1, chorus2, chorus3, chorus4;
 
-AudioConnection patchCord1(playRaw1, 0, mixer, 0);
-AudioConnection patchCord2(playRaw2, 0, mixer, 1);
-AudioConnection patchCord3(playRaw3, 0, mixer, 2);
-AudioConnection patchCord4(playRaw4, 0, mixer, 3);
-AudioConnection patchCord5(mixer, 0, out, 0);
-AudioConnection patchCord6(mixer, 0, out, 1);
-AudioConnection patchCord7(input, 0, queue1, 0);
+
+AudioConnection patchCord1(playRaw1, 0, flanger1, 0);
+AudioConnection patchCord2(flanger1, 0, granular1, 0);
+AudioConnection patchCord3(granular1, 0, chorus1, 0);
+AudioConnection patchCord4(chorus1, 0, mixer, 0);
+
+AudioConnection patchCord5(playRaw2, 0, flanger2, 0);
+AudioConnection patchCord6(flanger2, 0, granular2, 0);
+AudioConnection patchCord7(granular2, 0, chorus2, 0);
+AudioConnection patchCord8(chorus2, 0, mixer, 1);
+
+AudioConnection patchCord9(playRaw3, 0, flanger3, 0);
+AudioConnection patchCord10(flanger3, 0, granular3, 0);
+AudioConnection patchCord11(granular3, 0, chorus3, 0);
+AudioConnection patchCord12(chorus3, 0, mixer, 2);
+
+AudioConnection patchCord13(playRaw4, 0, flanger4,0);
+AudioConnection patchCord14(flanger4, 0, granular4, 0);
+AudioConnection patchCord15(granular4, 0, chorus4, 0);
+AudioConnection patchCord16(chorus4, 0, mixer, 3);
+
+AudioConnection patchCord17(mixer, 0, out, 0);
+AudioConnection patchCord18(mixer, 0, out, 1);
+AudioConnection patchCord19(input, 0, queue1, 0);
 
 
 int mixage[4] = {0, 0, 0, 0};
 float volume[4] = {0.5, 0.5, 0.5, 0.5};
-int selectedMemory=0;
-String son[4]={"SDTEST1.WAV","SDTEST2.WAV","SDTEST3.WAV","SDTEST4.WAV"};
-bool play=false;
-int piste=0;
-AudioPlaySdRaw * const playerlist[4] = {&playRaw1, &playRaw2, &playRaw3, &playRaw4};
+float flanger[4][3] = {{0,0,0},{0,0,0},{0,0,0},{0,0,0}};
+float chorus[4] = {0,0,0,0};
+float granular[4] = {0,0,0,0};
 
+
+//String son[4]={"SDTEST1.WAV","SDTEST2.WAV","SDTEST3.WAV","SDTEST4.WAV"};
 File file;
 bool isRecording=false;
+bool play=false;
+int piste=0;
+int selectedMemory=0;
+
+AudioPlaySdRaw * const playerlist[4] = {&playRaw1, &playRaw2, &playRaw3, &playRaw4};
+AudioEffectFlange * const flangelist[4] ={&flanger1,&flanger2,&flanger3,&flanger4};
+AudioEffectGranular * const granularlist[4] ={&granular1,&granular2,&granular3,&granular4};
+AudioEffectChorus * const choruslist[4] ={&chorus1,&chorus2,&chorus3,&chorus4};
+
+int s_idx = FLANGE_DELAY_LENGTH/4;
+int s_depth = FLANGE_DELAY_LENGTH/4;
+double s_freq = .5;
+
 
 
 void setup() {
     Serial.begin(115200);
-    AudioMemory(80);
+    AudioMemory(150);
     
     // Initialisation du Shield Audio
     audioShield.enable();
@@ -53,6 +97,27 @@ void setup() {
         while (1);
     }
     Serial.println(" Carte SD OK !");
+
+    // Réglage initial des effets
+    flanger1.begin(delayline,FLANGE_DELAY_LENGTH,s_idx,s_depth,s_freq);
+    granular1.begin(granularMemory, GRANULAR_MEMORY_SIZE);
+    granular1.beginPitchShift(10000000);
+    chorus1.begin(delayline2, CHORUS_DELAY_LENGTH, 1);
+
+    flanger2.begin(delayline,FLANGE_DELAY_LENGTH,s_idx,s_depth,s_freq);
+    granular2.begin(granularMemory, GRANULAR_MEMORY_SIZE);
+    granular2.beginPitchShift(10000000);
+    chorus2.begin(delayline2, CHORUS_DELAY_LENGTH, 1);
+
+    flanger3.begin(delayline,FLANGE_DELAY_LENGTH,s_idx,s_depth,s_freq);
+    granular3.begin(granularMemory, GRANULAR_MEMORY_SIZE);
+    granular3.beginPitchShift(10000000);
+    chorus3.begin(delayline2, CHORUS_DELAY_LENGTH, 1);
+
+    flanger4.begin(delayline,FLANGE_DELAY_LENGTH,s_idx,s_depth,s_freq);
+    granular4.begin(granularMemory, GRANULAR_MEMORY_SIZE);
+    granular4.beginPitchShift(10000000);
+    chorus4.begin(delayline2, CHORUS_DELAY_LENGTH, 1);
 
 }
 
@@ -116,6 +181,21 @@ void loop() {
         if (data.startsWith("VOLUME:")){
           int value=data.substring(7).toInt();
           setVolume(value);
+        }
+
+        if (data.startsWith("FLANGER:")){
+          int value=data.substring(8).toInt();
+          setFlanger(value);
+        }
+
+        if (data.startsWith("CHORUS:")){
+          int value=data.substring(7).toInt();
+          setChorus(value);
+        }
+
+        if (data.startsWith("GRANULAR:")){
+          int value=data.substring(9).toInt();
+          setGranular(value);
         }
 
         
@@ -245,3 +325,27 @@ void setVolume(int volumeLevel) {
   volume[selectedMemory]=(volumeValue*volumeValue);
   mixer.gain(0, volumeValue);
 }
+
+void setFlanger(int value) {
+    float offset = map(value, 0, 1000, 1, 100);
+    float depth = map(value, 0, 1000, 1, 100);
+    float delay = map(value, 0, 1000, 1, 100);
+    flanger[selectedMemory][0] = offset;
+    flanger[selectedMemory][1] = depth;
+    flanger[selectedMemory][2] = delay;
+    flangelist[selectedMemory]->voices(offset, depth, delay);
+    
+}
+
+void setChorus(int value) {
+    float voices = map(value, 0, 1000, 1, 10) ;
+    chorus[selectedMemory]=voices;
+    choruslist[selectedMemory]->voices(voices);
+}
+
+void setGranular(int value) {
+    float speed = map(value, 0, 1000, 0.125, 8);
+    granular[selectedMemory]=speed;
+    granularlist[selectedMemory]->setSpeed(speed);
+}
+
