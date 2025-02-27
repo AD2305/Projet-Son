@@ -97,24 +97,26 @@ void setup() {
     flanger1.begin(delayline,FLANGE_DELAY_LENGTH,s_idx,s_depth,s_freq);
     granular1.begin(granularMemory, GRANULAR_MEMORY_SIZE);
     granular1.beginPitchShift(10000000);
-    
-
     chorus1.begin(delayline2, CHORUS_DELAY_LENGTH, 2);
 
+    flanger2.begin(delayline,FLANGE_DELAY_LENGTH,s_idx,s_depth,s_freq);
+    granular2.begin(granularMemory, GRANULAR_MEMORY_SIZE);
+    granular2.beginPitchShift(10000000);
+    chorus2.begin(delayline2, CHORUS_DELAY_LENGTH, 2);
+
+    flanger3.begin(delayline,FLANGE_DELAY_LENGTH,s_idx,s_depth,s_freq);
+    granular3.begin(granularMemory, GRANULAR_MEMORY_SIZE);
+    granular3.beginPitchShift(10000000);
+    chorus3.begin(delayline2, CHORUS_DELAY_LENGTH, 2);
+
+    flanger4.begin(delayline,FLANGE_DELAY_LENGTH,s_idx,s_depth,s_freq);
+    granular4.begin(granularMemory, GRANULAR_MEMORY_SIZE);
+    granular4.beginPitchShift(10000000);
+    chorus4.begin(delayline2, CHORUS_DELAY_LENGTH, 2);
+
     
 
 
-    flanger2.begin(0, 0, 0, 0, 0);
-    granular2.begin(0, 0);
-    chorus2.begin(0, 0, 0);
-
-    flanger3.begin(0, 0, 0, 0, 0);
-    granular3.begin(0, 0);
-    chorus3.begin(0, 0, 0);
-
-    flanger4.begin(0, 0, 0, 0, 0);
-    granular4.begin(0, 0);
-    chorus4.begin(0, 0, 0);
 
     // 🎚 Initialisation du mixer
     mixer1.gain(0, 0.8);

@@ -35,6 +35,25 @@ AudioMixer4              mixer1;
 AudioOutputI2S audioOutput;      // Sortie audio
 AudioControlSGTL5000 audioShield;
 
+
+#define FLANGE_DELAY_LENGTH (6*AUDIO_BLOCK_SAMPLES)
+short delayline[FLANGE_DELAY_LENGTH];
+
+
+
+
+const int myInput = AUDIO_INPUT_LINEIN;
+
+int s_idx = FLANGE_DELAY_LENGTH/4;
+int s_depth = FLANGE_DELAY_LENGTH/4;
+double s_freq = .5;
+
+#define GRANULAR_MEMORY_SIZE 12800  // Mémoire pour l'effet granular
+int16_t granularMemory[GRANULAR_MEMORY_SIZE];
+
+#define CHORUS_DELAY_LENGTH (100 * AUDIO_BLOCK_SAMPLES)
+short delayline2[CHORUS_DELAY_LENGTH];
+
 // 🎚 Assignation des connexions audio
 AudioConnection patchCord1(player1, 0, flanger1, 0);    // Flanger pour player1
 AudioConnection patchCord2(flanger1, 0, granular1, 0);  // Granular pour player1
@@ -77,7 +96,7 @@ const int recordButton = 0; // Enregistre depuis le micro
 int selectedMemory = 0;
 const int recordDuration = 5;
 bool isRecording = false;
-int mixage[4] = {0, 0, 0, 0};
+int mixage[6] = {0, 0, 0, 0, 0, 0};
 
 #define SDCARD_MOSI_PIN  11   
 #define SDCARD_SCK_PIN   13  
@@ -112,24 +131,31 @@ void setup() {
     pinMode(recordButton, INPUT_PULLUP);
 
     // Réglage initial des effets
-    flanger1.begin(0, 0, 0);  // Flanger initialisé pour player1
-    granular1.begin(0, 0);      // Granular initialisé pour player1
-    chorus1.begin(0, 0, 0);        // Chorus initialisé pour player1
+    flanger1.begin(delayline,FLANGE_DELAY_LENGTH,s_idx,s_depth,s_freq);
+    granular1.begin(granularMemory, GRANULAR_MEMORY_SIZE);
+    granular1.beginPitchShift(10000000);
+    chorus1.begin(delayline2, CHORUS_DELAY_LENGTH, 1);
 
-    flanger2.begin(0, 0, 0);  // Flanger initialisé pour player2
-    granular2.begin(0, 0);      // Granular initialisé pour player2
-    chorus2.begin(0, 0, 0);        // Chorus initialisé pour player2
+    flanger2.begin(delayline,FLANGE_DELAY_LENGTH,s_idx,s_depth,s_freq);
+    granular2.begin(granularMemory, GRANULAR_MEMORY_SIZE);
+    granular2.beginPitchShift(10000000);
+    chorus2.begin(delayline2, CHORUS_DELAY_LENGTH, 1);
 
-    flanger3.begin(0, 0, 0);  // Flanger initialisé pour player3
-    granular3.begin(0, 0);      // Granular initialisé pour player3
-    chorus3.begin(0, 0, 0);        // Chorus initialisé pour player3
+    flanger3.begin(delayline,FLANGE_DELAY_LENGTH,s_idx,s_depth,s_freq);
+    granular3.begin(granularMemory, GRANULAR_MEMORY_SIZE);
+    granular3.beginPitchShift(10000000);
+    chorus3.begin(delayline2, CHORUS_DELAY_LENGTH, 1);
 
-    flanger4.begin(0, 0, 0);  // Flanger initialisé pour player4
-    granular4.begin(0, 0);      // Granular initialisé pour player4
-    chorus4.begin(0, 0, 0);        // Chorus initialisé pour player4
+    flanger4.begin(delayline,FLANGE_DELAY_LENGTH,s_idx,s_depth,s_freq);
+    granular4.begin(granularMemory, GRANULAR_MEMORY_SIZE);
+    granular4.beginPitchShift(10000000);
+    chorus4.begin(delayline2, CHORUS_DELAY_LENGTH, 1);
 
     // Initialisation des mixeurs (volume à 80% au départ)
     mixer1.gain(0, 0.8);
+    mixer1.gain(1, 0.8);
+    mixer1.gain(2, 0.8);
+    mixer1.gain(3, 0.8);
 }
 
 void loop() {
@@ -137,7 +163,7 @@ void loop() {
     setFlanger(selectedMemory, analogRead(potFlanger));
     setChorus(selectedMemory, analogRead(potChorus));
     setGranular(selectedMemory, analogRead(potGranular));
-    setVolume(selectedMemory, analogRead(potVolume))
+    setVolume(selectedMemory, analogRead(potVolume));
     
     
 
@@ -213,7 +239,7 @@ void loop() {
             Serial.println("Arrêt des sons.");
             delay(300);
         } else {
-            player1.play("SDTEST1.wav");
+            player1.play("SDTEST1.WAV");
             player2.play("SDTEST2.WAV");
             player3.play("SDTEST3.WAV");
             player4.play("SDTEST4.WAV");
@@ -232,6 +258,9 @@ void loop() {
     if (isRecording) {
         recordAudio(selectedMemory);
     }
+
+
+
 }
 
 // Fonction pour démarrer l'enregistrement
@@ -246,54 +275,52 @@ void recordAudio(int numeropiste) {
 }
 
 void setFlanger(int playerNumber, int potValue) {
-    float depth = map(potValue, 0, 1023, 0, 100) / 100.0;
-    float speed = map(potValue, 0, 1023, 0, 10);
-    float offset = map(potValue, 0, 1023, 0, 10);
+    float offset = map(potValue, 0, 1000, 1, 100);
+    float depth = map(potValue, 0, 1000, 1, 100);
+    float delay = map(potValue, 0, 1000, 1, 100);
     
     if (playerNumber == 1) {
-        flanger1.voices(depth, speed, offset)
+        flanger1.voices(offset, depth, delay);
     } else if (playerNumber == 2) {
-        flanger2.voices(depth, speed, offset)
+        flanger2.voices(offset, depth, delay);
     } else if (playerNumber == 3) {
-        flanger3.voices(depth, speed, offset)
+        flanger3.voices(offset, depth, delay);
     } else if (playerNumber == 4) {
-        flanger4.voices(depth, speed, offset)
+        flanger4.voices(offset, depth, delay);
     }
 }
 
 void setChorus(int playerNumber, int potValue) {
-    float voices = map(potValue, 0, 1023, 0, 100) / 100.0;
+    float voices = map(potValue, 0, 1000, 1, 10) ;
     
     if (playerNumber == 1) {
-        chorus1.voices(voices)
+        chorus1.voices(voices);
         
     } else if (playerNumber == 2) {
-        chorus2.voices(voices)
+        chorus2.voices(voices);
         
     } else if (playerNumber == 3) {
-        chorus3.voices(voices)
+        chorus3.voices(voices);
         
     } else if (playerNumber == 4) {
-        chorus4.voices(voices)
+        chorus4.voices(voices);
         
     }
+
+
 }
 
 void setGranular(int playerNumber, int potValue) {
-    float grainSize = map(potValue, 0, 1023, 0, 100) / 100.0;
-    float speed = map(potValue, 0, 1023, 0, 1);
+
+    float speed = map(potValue, 0, 1000, 0.125, 8);
     
     if (playerNumber == 1) {
-        granular1.beginPitchShift(grainSize);
         granular1.setSpeed(speed);
     } else if (playerNumber == 2) {
-        granular2.beginPitchShift(grainSize);
         granular2.setSpeed(speed);
     } else if (playerNumber == 3) {
-        granular3.beginPitchShift(grainSize);
         granular3.setSpeed(speed);
     } else if (playerNumber == 4) {
-        granular4.beginPitchShift(grainSize);
         granular4.setSpeed(speed);
     }
 }
@@ -320,26 +347,25 @@ void setVolume(int playerNumber, int potValue) {
     float volumeLevel = map(analogRead(potVolume), 0, 1023, 0, 100) / 100.0;
   
     switch (playerNumber) {
-      case 1: mixer1.gain(playerNumber  , volumeLevel); break;
-      case 2: mixer1.gain(playerNumber , volumeLevel); break;
-      case 3: mixer1.gain(playerNumber , volumeLevel); break;
-      case 4: mixer1.gain(playerNumber , volumeLevel); break;
+      case 1: mixer1.gain(playerNumber - 1   , volumeLevel); break;
+      case 2: mixer1.gain(playerNumber - 1  , volumeLevel); break;
+      case 3: mixer1.gain(playerNumber - 1  , volumeLevel); break;
+      case 4: mixer1.gain(playerNumber - 1  , volumeLevel); break;
+      case 5: audioShield.volume(volumeLevel); break;
     }
-
-    float volumeLevel = map(analogRead(potVolume), 0, 1023, 0, 100) / 100.0; // 0 à 1.0
-    audioShield.volume(volumeLevel);
 }
 
 void ToutesPistes(int a) {
 
     if (a == 5){
   
-          player1.play("SDTEST1.wav");
+          player1.play("SDTEST1.WAV");
           player2.play("SDTEST2.WAV");
           player3.play("SDTEST3.WAV");
           player4.play("SDTEST4.WAV");
           Serial.println("Reprends les sons.");
           delay(300);
     }
+}
 
     
